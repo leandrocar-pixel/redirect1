@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editar Anúncio - Casa para Alugar</title>
+<style>
+* { box-sizing: border-box; }
+body { 
+    font-family: system-ui, Arial; 
+    background: #f7f7f8; 
+    margin: 0; 
+    padding: 0;
+    color: #222; 
+}
+.container { 
+    max-width: 820px; 
+    margin: 0 auto;
+    padding: 20px; 
+    background: #fff; 
+    min-height: 100vh;
+}
+h1 { text-align: center; margin: 0 0 20px 0; }
+label { font-weight: 600; display: block; margin: 18px 0 6px 0; }
+input[type="text"], textarea, input[type="file"] { 
+    width: 100%; 
+    padding: 10px; 
+    border-radius: 8px; 
+    border: 1px solid #e1e1e1; 
+    font-size: 16px;
+    font-family: inherit;
+}
+textarea { resize: vertical; min-height: 80px; }
+
+#imagens { margin-top: 15px; }
+.img-item { 
+    margin-top: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+.img-item img {
+    width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    object-fit: cover;
+}
+.btn-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+.btn { 
+    background: #25d366; 
+    color: #fff; 
+    border: none; 
+    border-radius: 8px; 
+    padding: 10px 18px; 
+    font-size: 1rem; 
+    font-weight: 600; 
+    cursor: pointer;
+}
+.btn:hover { background: #1eb354; }
+.btn.danger { background: #e74c3c; }
+.btn.danger:hover { background: #c0392b; }
+#msg { 
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    display: none;
+}
+#msg.show { display: block; }
+#msg.success { color: #fff; background: #25d366; }
+#msg.error { color: #fff; background: #e74c3c; }
+footer { text-align: center; color: #888; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Editar Anúncio</h1>
+    
+    <label for="titulo">Título</label>
+    <input id="titulo" type="text" value="Casa para Alugar">
+    
+    <label for="subtitulo">Subtítulo</label>
+    <input id="subtitulo" type="text" value="Descrição breve do anúncio">
+    
+    <label for="descricao">Descrição</label>
+    <textarea id="descricao">Casa espaçosa...</textarea>
+    
+    <label for="caracteristicas">Características</label>
+    <textarea id="caracteristicas">3 quartos...</textarea>
+    
+    <label for="valor">Valor do aluguel</label>
+    <input id="valor" type="text" placeholder="Ex: R$ 1.500 / mês">
+    
+    <label for="localizacao">Localização</label>
+    <input id="localizacao" type="text" placeholder="Bairro / Cidade">
+    
+    <label for="whatsapp">Número do WhatsApp</label>
+    <input id="whatsapp" type="text" placeholder="Ex: 61999999999">
+
+    <label for="creci">CRECI</label>
+    <input id="creci" type="text" placeholder="Ex: 999999">
+    
+    <label for="fileInput">Imagens do carrossel</label>
+    <input id="fileInput" type="file" accept="image/*" multiple onchange="carregarFotosArquivos(event)">
+    
+    <div id="imagens"></div>
+    
+    <div class="btn-group">
+        <button class="btn" onclick="salvar()">Salvar alterações</button>
+        <button class="btn danger" onclick="limparImagens()">Limpar imagens</button>
+    </div>
+    
+    <div id="msg"></div>
+</div>
+
+<footer>© 2025 - Edição do Anúncio</footer>
+
+<script>
+function getImagens() {
+    let imgs = JSON.parse(localStorage.getItem('imagensFixas')||'[]');
+    return Array.isArray(imgs) ? imgs : [];
+}
+
+function renderImagens() {
+    const div = document.getElementById('imagens');
+    div.innerHTML = '';
+    const imgs = getImagens();
+    
+    imgs.forEach((src, i) => {
+        const item = document.createElement('div');
+        item.className = 'img-item';
+        
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Imagem ' + (i + 1);
+        
+        const btn = document.createElement('button');
+        btn.className = 'btn danger';
+        btn.textContent = 'Remover imagem ' + (i + 1);
+        btn.onclick = (e) => {
+            e.preventDefault();
+            removerImagem(i);
+        };
+        
+        item.appendChild(img);
+        item.appendChild(btn);
+        div.appendChild(item);
+    });
+}
+
+function carregarFotosArquivos(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    let imgs = getImagens();
+    const readers = [];
+    
+    for (let i = 0; i < files.length; i++) {
+        readers.push(lerArquivoComoDataURL(files[i]));
+    }
+    
+    Promise.all(readers).then(results => {
+        imgs = [...imgs, ...results];
+        localStorage.setItem('imagensFixas', JSON.stringify(imgs));
+        renderImagens();
+        document.getElementById('fileInput').value = '';
+        mostrarMensagem('Imagens adicionadas!', 'success');
+    }).catch(() => {
+        mostrarMensagem('Erro ao carregar imagens', 'error');
+    });
+}
+
+function lerArquivoComoDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => reject();
+        reader.readAsDataURL(file);
+    });
+}
+
+function removerImagem(i) {
+    let imgs = getImagens();
+    imgs.splice(i, 1);
+    localStorage.setItem('imagensFixas', JSON.stringify(imgs));
+    renderImagens();
+}
+
+function limparImagens() {
+    if (confirm('Remover todas as imagens?')) {
+        localStorage.setItem('imagensFixas', JSON.stringify([]));
+        renderImagens();
+        mostrarMensagem('Imagens removidas!', 'error');
+    }
+}
+
+function salvar() {
+    localStorage.setItem('campo_titulo', document.getElementById('titulo').value);
+    localStorage.setItem('campo_subtitulo', document.getElementById('subtitulo').value);
+    localStorage.setItem('campo_descricao', document.getElementById('descricao').value);
+    localStorage.setItem('campo_caracteristicas', document.getElementById('caracteristicas').value);
+    localStorage.setItem('campo_valor', document.getElementById('valor').value);
+    localStorage.setItem('campo_localizacao', document.getElementById('localizacao').value);
+    localStorage.setItem('campo_whatsapp', document.getElementById('whatsapp').value);
+    localStorage.setItem('campo_creci', document.getElementById('creci').value);
+    mostrarMensagem('Alterações salvas!', 'success');
+}
+
+function mostrarMensagem(texto, tipo) {
+    const msg = document.getElementById('msg');
+    msg.textContent = texto;
+    msg.className = 'show ' + tipo;
+    setTimeout(() => msg.classList.remove('show'), 3000);
+}
+
+carregarCampos();
+renderImagens();
+
+function carregarCampos() {
+    const campos = ['titulo','subtitulo','descricao','caracteristicas','valor','localizacao','whatsapp','creci'];
+    campos.forEach(id => {
+        const v = localStorage.getItem('campo_' + id);
+        if (v !== null) document.getElementById(id).value = v;
+    });
+}
+</script>
+</body>
+</html>

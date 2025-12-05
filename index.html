@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Casa para Alugar - Modelo</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; background:#f7f7f8; color:#222; }
+.container { max-width:820px; margin:0 auto; padding:20px; background:#fff; }
+header{ padding:20px; text-align:center; background:linear-gradient(90deg,#fff,#f1f6f2); border-bottom:1px solid #e6e6e6;}
+h1 { margin: 0 0 8px 0; font-size: 28px; font-weight: 600; }
+h2 { margin: 24px 0 12px 0; font-size: 18px; font-weight: 600; border-bottom: 2px solid #25d366; padding-bottom: 8px; }
+.info-block { margin-top:20px; padding:12px 0; border-bottom:1px solid #eee; }
+.btn-whats { display:inline-block; text-decoration:none; background:#25d366; color:white; padding:12px 16px; border-radius:10px; font-weight:600; margin:20px 0; }
+
+/* Carousel: show one image at a time, centered and responsive */
+.carousel {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin: 18px 0 8px 0;
+}
+.carousel button {
+  background: rgba(0,0,0,0.06);
+  border: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 20px;
+  user-select: none;
+}
+.carousel button:disabled { opacity: 0.4; cursor: default; }
+#slides {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  background:#f2f3f5;
+  min-height:280px;
+  max-height:60vh;
+  overflow:hidden;
+  position:relative;
+}
+#slides img {
+  max-width:100%;
+  max-height:60vh;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  display:block;
+  transition:opacity 220ms ease;
+  opacity:1;
+}
+
+/* Counter */
+.carousel-counter { font-size:0.9rem; color:#555; text-align:center; margin-top:8px; }
+
+/* small screens */
+@media (max-width:640px){
+  .container { padding:15px; }
+  h1 { font-size:22px; }
+  #slides { min-height:200px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="titulo">Casa para Alugar</h1>
+  <p id="subtitulo">Descrição breve do anúncio</p>
+</header>
+
+<div class="container">
+  <h2>Fotos do imóvel</h2>
+
+  <div class="carousel" aria-label="Carrossel de fotos">
+    <button id="prevBtn" aria-label="Foto anterior">❮</button>
+    <div id="slides" role="region" aria-live="polite">
+      <!-- imagem única será inserida aqui -->
+    </div>
+    <button id="nextBtn" aria-label="Próxima foto">❯</button>
+  </div>
+  <div class="carousel-counter" id="counter">Carregando fotos...</div>
+
+  <h2>Informações do imóvel</h2>
+
+  <div class="info-block">
+    <h3>Descrição</h3>
+    <div id="descricao"></div>
+  </div>
+
+  <div class="info-block">
+    <h3>Características</h3>
+    <div id="caracteristicas"></div>
+  </div>
+
+  <div class="info-block">
+    <h3>Valor do aluguel</h3>
+    <div id="valor"></div>
+  </div>
+
+  <div class="info-block">
+    <h3>Localização</h3>
+    <div id="localizacao"></div>
+  </div>
+
+  <div class="info-block">
+    <h3>CRECI</h3>
+    <div id="creci"></div>
+  </div>
+
+  <a id="whats" class="btn-whats" href="#" target="_blank" rel="noopener">Fale comigo no WhatsApp</a>
+</div>
+
+<footer style="text-align:center;padding:18px;color:#888;margin-top:20px;border-top:1px solid #eee;">© 2025 - Modelo de Anúncio</footer>
+
+<script>
+let imagens = [];
+let indiceAtual = 0;
+
+function getCampo(id, padrao='') {
+  const v = localStorage.getItem('campo_' + id);
+  return v !== null ? v : padrao;
+}
+function getImagens() {
+  try { return JSON.parse(localStorage.getItem('imagensFixas') || '[]'); } catch(e){ return []; }
+}
+
+function updateCounter() {
+  const counter = document.getElementById('counter');
+  if (!imagens || imagens.length === 0) counter.textContent = 'Nenhuma foto disponível';
+  else counter.textContent = 'Foto ' + (indiceAtual + 1) + ' de ' + imagens.length;
+}
+
+function showImage(index) {
+  const slides = document.getElementById('slides');
+  slides.innerHTML = '';
+  if (!imagens || imagens.length === 0) {
+    slides.textContent = 'Sem imagens';
+    document.getElementById('prevBtn').disabled = true;
+    document.getElementById('nextBtn').disabled = true;
+    updateCounter();
+    return;
+  }
+  indiceAtual = ((index % imagens.length) + imagens.length) % imagens.length;
+  const img = document.createElement('img');
+  img.src = imagens[indiceAtual];
+  img.alt = 'Foto ' + (indiceAtual + 1);
+  img.loading = 'lazy';
+  slides.appendChild(img);
+
+  // habilita/desabilita botões (sempre habilita se mais de 1)
+  document.getElementById('prevBtn').disabled = imagens.length <= 1;
+  document.getElementById('nextBtn').disabled = imagens.length <= 1;
+
+  updateCounter();
+}
+
+function changeImage(direction) {
+  if (!imagens || imagens.length === 0) return;
+  showImage(indiceAtual + direction);
+}
+
+// atualizar WhatsApp link (usa campos locais como fallback)
+function atualizarWhatsApp() {
+  const whatsappNum = getCampo('whatsapp','61999532815');
+  const base = 'https://wa.me/' + whatsappNum;
+  const descricao = getCampo('descricao','').replace(/\n/g, ' ').trim();
+  const caracteristicas = getCampo('caracteristicas','').replace(/\n/g, ' ').trim();
+  const valor = getCampo('valor','').replace(/\n/g, ' ').trim();
+  const local = getCampo('localizacao','').replace(/\n/g, ' ').trim();
+  const creci = getCampo('creci','').replace(/\n/g, ' ').trim();
+
+  let message = getCampo('titulo','Casa para Alugar') + ' - Tenho interesse.\n';
+  if (valor) message += 'Valor: ' + valor + '\n';
+  if (local) message += 'Localização: ' + local + '\n';
+  if (descricao) message += 'Descrição: ' + descricao + '\n';
+  if (caracteristicas) message += 'Características: ' + caracteristicas + '\n';
+  if (creci) message += 'CRECI: ' + creci + '\n';
+  if (imagens.length > 0) message += '(O anúncio possui ' + imagens.length + ' foto(s).)';
+
+  document.getElementById('whats').href = base + '?text=' + encodeURIComponent(message);
+}
+
+async function preencherCampos() {
+  // tenta buscar do servidor; se falhar, usa localStorage
+  try {
+    const r = await fetch('/api/anuncio');
+    if (r.ok) {
+      const data = await r.json();
+      document.getElementById('titulo').textContent = data.titulo || 'Casa para Alugar';
+      document.getElementById('subtitulo').textContent = data.subtitulo || 'Descrição breve do anúncio';
+      document.getElementById('descricao').textContent = data.descricao || 'Casa espaçosa...';
+      document.getElementById('caracteristicas').textContent = data.caracteristicas || '3 quartos...';
+      document.getElementById('valor').textContent = data.valor || '';
+      document.getElementById('localizacao').textContent = data.localizacao || '';
+      document.getElementById('creci').textContent = data.creci || '';
+      imagens = Array.isArray(data.imagens) ? data.imagens : getImagens();
+      showImage(0);
+      atualizarWhatsApp();
+      return;
+    }
+  } catch(e) {
+    // servidor indisponível, cairá para localStorage abaixo
+  }
+
+  // fallback localStorage
+  document.getElementById('titulo').textContent = getCampo('titulo','Casa para Alugar');
+  document.getElementById('subtitulo').textContent = getCampo('subtitulo','Descrição breve do anúncio');
+  document.getElementById('descricao').textContent = getCampo('descricao','Casa espaçosa...');
+  document.getElementById('caracteristicas').textContent = getCampo('caracteristicas','3 quartos...');
+  document.getElementById('valor').textContent = getCampo('valor','');
+  document.getElementById('localizacao').textContent = getCampo('localizacao','');
+  document.getElementById('creci').textContent = getCampo('creci','');
+  imagens = getImagens();
+  showImage(0);
+  atualizarWhatsApp();
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => changeImage(-1));
+document.getElementById('nextBtn').addEventListener('click', () => changeImage(1));
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') changeImage(-1);
+  if (e.key === 'ArrowRight') changeImage(1);
+});
+
+// inicialização
+(async () => {
+  imagens = getImagens();
+  indiceAtual = 0;
+  await preencherCampos();
+})();
+</script>
+</body>
+</html>
+
+<!-- Casa-Aluguel — empacotamento
+
+Passos para gerar .exe e instalador (Windows):
+
+Pré-requisitos:
+- Node.js (npm)
+- opcional: pkg (será instalado automaticamente pelo script) 
+- opcional: NSIS (makensis) para gerar instalador .exe
+
+1. Abra PowerShell na pasta do projeto.
+2. Execute:
+   pwsh .\build.ps1
+3. Resultado em ./dist:
+   - casa-aluguel.exe (aplicação)
+   - arquivos estáticos (index.html, editar.html, assets...)
+   - opcional: casa-aluguel-installer.exe (se NSIS estiver instalado)
+
+Instalação no outro computador:
+- Copie o conteúdo da pasta dist inteira para a máquina de destino.
+- Execute casa-aluguel.exe ou use o instalador gerado.
+- O servidor inicia e serve em http://localhost:3000.
+
+Observações:
+- O servidor espera encontrar os arquivos estáticos e data.db ao lado do .exe (na mesma pasta).
+- Se quiser porta diferente, defina variável de ambiente PORT antes de executar.
+
+; filepath: nsis/installer.nsi
+Name "Casa Aluguel"
+OutFile "casa-aluguel-installer.exe"
+InstallDir "$PROGRAMFILES\Casa-Aluguel"
+SetCompress auto
+SetCompressor lzma
+
+Section "Install"
+  SetOutPath "$INSTDIR"
+  File /r "dist\*"
+  CreateShortCut "$DESKTOP\Casa-Aluguel.lnk" "$INSTDIR\casa-aluguel.exe"
+SectionEnd
+
+Section "Uninstall"
+  Delete "$INSTDIR\casa-aluguel.exe"
+  Delete "$DESKTOP\Casa-Aluguel.lnk"
+  RMDir /r "$INSTDIR"
+SectionEnd
+-->
+
+{
+  "name": "casa-aluguel",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6"
+  }
+}
